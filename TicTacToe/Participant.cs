@@ -12,4 +12,8 @@ public class Participant
     
     [JsonPropertyName("pais")]
     public string Pais { get; set; }
+    
+    [JsonPropertyName("numero")]
+    public string Numero { get; set; }
+
 }
