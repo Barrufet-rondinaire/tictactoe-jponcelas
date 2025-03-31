@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
@@ -10,103 +11,132 @@ namespace TicTacToe
     class Program
     {
         private static readonly HttpClient client = new HttpClient { BaseAddress = new Uri("http://localhost:8080/") };
-        private const string JugadorDesqualificada = "Espanya";
+        private const string JugadorDesqualificat = "Espanya";
 
         static async Task Main(string[] args)
         {
             var participantsValids = await ConseguirParticipants();
-
-            var victories = await ProcessarPartides(participantsValids);
-
-            Console.WriteLine("Resultats Finals:");
-            foreach (var victory in victories)
-            {
-                Console.WriteLine($"{victory.Key}: {victory.Value} victòries");
-            }
+            var victorias = await ProcesarPartidasAsync(participantsValids);
+            MostrarResultados(victorias, participantsValids);
         }
 
         private static async Task<Dictionary<string, string>> ConseguirParticipants()
         {
+            Console.WriteLine("Recuperant participants...");
             var participants = await client.GetFromJsonAsync<List<string>>("/jugadors");
             if (participants == null) return new Dictionary<string, string>();
 
-            string pattern = @"participant (?<nom>[A-Za-z]+ [A-Za-z'-]+).*representa(nt)? (a|de) (?<pais>[A-za-z]+)";
+            string pattern = @"participant (?<nom>[A-Za-z]+ [A-Za-z'-]+).*representa(nt)? (a|de) (?<pais>[A-Za-z]+)";
             var participantsValids = new Dictionary<string, string>();
-        
-            foreach (var participant1 in participants)
+
+            foreach (var participant in participants)
             {
-                Match match = Regex.Match(participant1, pattern);
+                Match match = Regex.Match(participant, pattern);
                 if (match.Success)
                 {
                     string nom = match.Groups["nom"].Value;
-                    string cognom = match.Groups["cognom"].Value;
                     string pais = match.Groups["pais"].Value;
-                
-                    if (pais != JugadorDesqualificada)
-                    {
-                        Console.WriteLine($"Nom: {nom} {cognom}, País: {pais}");
 
+                    if (pais != JugadorDesqualificat)
+                    {
+                        participantsValids[nom] = pais;
+                        Console.WriteLine($"Nom: {nom}, País: {pais}");
                     }
                 }
             }
-
             return participantsValids;
         }
 
-        private static async Task<Dictionary<string, int>> ProcessarPartides(Dictionary<string, string> participantsValids)
+        private static async Task<Dictionary<string, int>> ProcesarPartidasAsync(Dictionary<string, string> participantsValids)
         {
-            var partidesNumeros = await client.GetFromJsonAsync<List<int>>("/partides");
+            Dictionary<string, int> victorias = new();
 
-            Dictionary<string, int> victories = new();
-
-            foreach (var numero in partidesNumeros)
+            for (int i = 1; i <= 10000; i++)
             {
-                var partida = await client.GetFromJsonAsync<Partida>($"partida{numero}");
-
-                if (partida == null) continue;
-
-                if (!participantsValids.ContainsKey(partida.Jugador1.ToLower()) || !participantsValids.ContainsKey(partida.Jugador2.ToLower()))
-                    continue;
-
-                string guanyador = SaberQuiHaGuanyat(partida.Tauler);
-
-                if (!string.IsNullOrEmpty(guanyador))
+                try
                 {
-                    Victories(victories, guanyador);
+                    var partida = await client.GetFromJsonAsync<Partida>($"/partida/{i}");
+                    
+                    string ganador = SaberQuiHaGuanyat(partida.Tauler);
+                    if (ganador == "O")
+                    {
+                        if (!victorias.ContainsKey(partida.Jugador1))
+                        {
+                            victorias[partida.Jugador1] = 0;
+                        }
+                        victorias[partida.Jugador1]++;
+                        Console.WriteLine($"Partida {i}: Guanyador - Jugador 1 ({partida.Jugador1})");
+                    }
+                    else if (ganador == "X")
+                    {
+                        if (!victorias.ContainsKey(partida.Jugador2))
+                        {
+                            victorias[partida.Jugador2] = 0;
+                        }
+                        victorias[partida.Jugador2]++;
+                        Console.WriteLine($"Partida {i}: Guanyador - Jugador 2 ({partida.Jugador2})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Partida {i}: Sense guanyador.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processant partida {i}: {ex.Message}");
                 }
             }
 
-            return victories;
+            return victorias;
         }
 
-        private static string SaberQuiHaGuanyat(string tauler)
+        private static string SaberQuiHaGuanyat(List<string> tauler)
         {
-            string[] liniesGuanyadores = { "012", "345", "678", "036", "147", "258", "048", "246" };
-
-            foreach (var linia in liniesGuanyadores)
+            foreach (var fila in tauler)
             {
-                char a = tauler[linia[0] - '0'];
-                char b = tauler[linia[1] - '0'];
-                char c = tauler[linia[2] - '0'];
-
-                if (a == b && b == c && a != '.')
-                    return a == 'X' ? "Jugador1" : "Jugador2";
+                if (fila == "XXX") return "X";
+                if (fila == "OOO") return "O";
             }
 
-            return string.Empty;
+            for (int col = 0; col < 3; col++)
+            {
+                if (tauler[0][col] == tauler[1][col] && tauler[1][col] == tauler[2][col] && tauler[0][col] != '.')
+                {
+                    return tauler[0][col].ToString(); 
+                }
+            }
+
+            if (tauler[0][0] == tauler[1][1] && tauler[1][1] == tauler[2][2] && tauler[0][0] != '.')
+                return tauler[0][0].ToString();
+
+            if (tauler[0][2] == tauler[1][1] && tauler[1][1] == tauler[2][0] && tauler[0][2] != '.')
+                return tauler[0][2].ToString();
+
+            return "";
         }
 
-        private static void Victories(Dictionary<string, int> victories, string jugador)
+
+        private static void MostrarResultados(Dictionary<string, int> victorias, Dictionary<string, string> participantsValids)
         {
-            if (victories.ContainsKey(jugador))
+            Console.WriteLine("\nResultats Finals:");
+            foreach (var jugador in victorias.OrderByDescending(v => v.Value))
             {
-                victories[jugador]++;
+                Console.WriteLine($"{jugador.Key}: {jugador.Value} victòries");
+            }
+
+            if (victorias.Count > 0)
+            {
+                var guanyador = victorias.OrderByDescending(v => v.Value).First();
+                Console.WriteLine($"\nGuanyador: {guanyador.Key}, Victòries: {guanyador.Value}");
+                if (participantsValids.TryGetValue(guanyador.Key, out string pais))
+                {
+                    Console.WriteLine($"País del guanyador: {pais}");
+                }
             }
             else
             {
-                victories.Add(jugador, 1);
+                Console.WriteLine("\nNo hi ha cap guanyador.");
             }
         }
     }
-    
 }
