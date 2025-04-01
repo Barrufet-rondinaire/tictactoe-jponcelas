@@ -17,7 +17,7 @@ namespace TicTacToe
         {
             var participantsValids = await ConseguirParticipants();
             var victorias = await ProcesarPartidasAsync(participantsValids);
-            MostrarResultados(victorias, participantsValids);
+            EnseyarResultatJugadors(victorias, participantsValids);
         }
 
         private static async Task<Dictionary<string, string>> ConseguirParticipants()
@@ -98,11 +98,11 @@ namespace TicTacToe
                 if (fila == "OOO") return "O";
             }
 
-            for (int col = 0; col < 3; col++)
+            for (int columna = 0; columna < 3; columna++)
             {
-                if (tauler[0][col] == tauler[1][col] && tauler[1][col] == tauler[2][col] && tauler[0][col] != '.')
+                if (tauler[0][columna] == tauler[1][columna] && tauler[1][columna] == tauler[2][columna] && tauler[0][columna] != '.')
                 {
-                    return tauler[0][col].ToString(); 
+                    return tauler[0][columna].ToString(); 
                 }
             }
 
@@ -116,7 +116,7 @@ namespace TicTacToe
         }
 
 
-        private static void MostrarResultados(Dictionary<string, int> victorias, Dictionary<string, string> participantsValids)
+        private static void EnseyarResultatJugadors(Dictionary<string, int> victorias, Dictionary<string, string> participantsValids)
         {
             Console.WriteLine("\nResultats Finals:");
             foreach (var jugador in victorias.OrderByDescending(v => v.Value))
