@@ -16,8 +16,8 @@ namespace TicTacToe
         static async Task Main(string[] args)
         {
             var participantsValids = await ConseguirParticipants();
-            var victorias = await ProcesarPartidasAsync(participantsValids);
-            EnseyarResultatJugadors(victorias, participantsValids);
+            var victories = await ProcesarPartidasAsync(participantsValids);
+            EnseyarResultatJugadors(victories, participantsValids);
         }
 
         private static async Task<Dictionary<string, string>> ConseguirParticipants()
@@ -49,7 +49,7 @@ namespace TicTacToe
 
         private static async Task<Dictionary<string, int>> ProcesarPartidasAsync(Dictionary<string, string> participantsValids)
         {
-            Dictionary<string, int> victorias = new();
+            Dictionary<string, int> victories = new();
 
             for (int i = 1; i <= 10000; i++)
             {
@@ -60,20 +60,20 @@ namespace TicTacToe
                     string ganador = SaberQuiHaGuanyat(partida.Tauler);
                     if (ganador == "O")
                     {
-                        if (!victorias.ContainsKey(partida.Jugador1))
+                        if (!victories.ContainsKey(partida.Jugador1))
                         {
-                            victorias[partida.Jugador1] = 0;
+                            victories[partida.Jugador1] = 0;
                         }
-                        victorias[partida.Jugador1]++;
+                        victories[partida.Jugador1]++;
                         Console.WriteLine($"Partida {i}: Guanyador - Jugador 1 ({partida.Jugador1})");
                     }
                     else if (ganador == "X")
                     {
-                        if (!victorias.ContainsKey(partida.Jugador2))
+                        if (!victories.ContainsKey(partida.Jugador2))
                         {
-                            victorias[partida.Jugador2] = 0;
+                            victories[partida.Jugador2] = 0;
                         }
-                        victorias[partida.Jugador2]++;
+                        victories[partida.Jugador2]++;
                         Console.WriteLine($"Partida {i}: Guanyador - Jugador 2 ({partida.Jugador2})");
                     }
                     else
@@ -87,7 +87,7 @@ namespace TicTacToe
                 }
             }
 
-            return victorias;
+            return victories;
         }
 
         private static string SaberQuiHaGuanyat(List<string> tauler)
@@ -116,17 +116,17 @@ namespace TicTacToe
         }
 
 
-        private static void EnseyarResultatJugadors(Dictionary<string, int> victorias, Dictionary<string, string> participantsValids)
+        private static void EnseyarResultatJugadors(Dictionary<string, int> victories, Dictionary<string, string> participantsValids)
         {
             Console.WriteLine("\nResultats Finals:");
-            foreach (var jugador in victorias.OrderByDescending(v => v.Value))
+            foreach (var jugador in victories.OrderByDescending(v => v.Value))
             {
                 Console.WriteLine($"{jugador.Key}: {jugador.Value} victòries");
             }
 
-            if (victorias.Count > 0)
+            if (victories.Count > 0)
             {
-                var guanyador = victorias.OrderByDescending(v => v.Value).First();
+                var guanyador = victories.OrderByDescending(v => v.Value).First();
                 Console.WriteLine($"\nGuanyador: {guanyador.Key}, Victòries: {guanyador.Value}");
                 if (participantsValids.TryGetValue(guanyador.Key, out string pais))
                 {
